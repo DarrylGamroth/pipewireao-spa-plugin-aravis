@@ -98,11 +98,6 @@ The pinned fork contains the native GV/UV buffer-progress API required by
 revision deliberately when those interfaces change; do not follow the fork's
 moving `main` branch during a build.
 
-Aravis is a C/Meson project rather than a Cargo package, so it cannot be used
-as a normal Cargo `git` dependency. Cargo remains responsible for the Rust SPA
-crates in this repository; Meson owns C dependency resolution and linking. A
-Cargo task that ran Git and Meson would only wrap this same fallback build.
-
 ## Isolated fake-camera tests
 
 Do not run the Aravis fake GigE Vision camera directly on a development host
