@@ -179,3 +179,10 @@ option(
   value: '/usr/local',
   description: 'ImageStreamIO installation prefix',
 )
+
+option(
+  'aravis-gige-test',
+  type: 'boolean',
+  value: false,
+  description: 'Test against the Aravis fake GigE Vision camera on loopback',
+)
