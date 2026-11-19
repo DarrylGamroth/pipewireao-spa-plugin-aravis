@@ -37,9 +37,8 @@ struct test_buffer {
 	struct spa_buffer buffer;
 	struct spa_data data;
 	struct spa_chunk chunk;
-	struct spa_meta metas[2];
+	struct spa_meta metas[1];
 	struct spa_meta_header header;
-	struct spa_meta_acquisition acquisition;
 	void *payload;
 };
 
@@ -176,11 +175,6 @@ static void init_buffer(struct test_buffer *storage, uint32_t size)
 		.size = sizeof(storage->header),
 		.data = &storage->header,
 	};
-	storage->metas[1] = (struct spa_meta){
-		.type = SPA_META_Acquisition,
-		.size = sizeof(storage->acquisition),
-		.data = &storage->acquisition,
-	};
 	storage->buffer.n_metas = SPA_N_ELEMENTS(storage->metas);
 	storage->buffer.metas = storage->metas;
 	storage->buffer.n_datas = 1;
@@ -225,15 +219,16 @@ static void inspect_port(struct spa_handle *handle, struct spa_node *node,
 			SPA_TYPE_OBJECT_ParamIO, NULL, SPA_PARAM_IO_id, SPA_POD_Id(&advertised)) >= 0);
 	spa_assert_se(advertised == SPA_IO_Buffers);
 	params->expected = SPA_PARAM_Meta;
-	for (uint32_t i = 0; i < 2; i++) {
-		params->param = NULL;
-		spa_assert_se(spa_node_port_enum_params(node, 0, SPA_DIRECTION_OUTPUT, 0,
-				SPA_PARAM_Meta, i, 1, NULL) == 0);
-		spa_assert_se(params->param != NULL);
-		spa_assert_se(spa_pod_parse_object(params->param, SPA_TYPE_OBJECT_ParamMeta,
-				NULL, SPA_PARAM_META_type, SPA_POD_Id(&advertised)) >= 0);
-		spa_assert_se(advertised == (i == 0 ? SPA_META_Header : SPA_META_Acquisition));
-	}
+	params->param = NULL;
+	spa_assert_se(spa_node_port_enum_params(node, 0, SPA_DIRECTION_OUTPUT, 0,
+			SPA_PARAM_Meta, 0, 1, NULL) == 0);
+	spa_assert_se(params->param != NULL);
+	spa_assert_se(spa_pod_parse_object(params->param, SPA_TYPE_OBJECT_ParamMeta,
+			NULL, SPA_PARAM_META_type, SPA_POD_Id(&advertised)) >= 0);
+	spa_assert_se(advertised == SPA_META_Header);
+	params->param = NULL;
+	spa_assert_se(spa_node_port_enum_params(node, 0, SPA_DIRECTION_OUTPUT, 0,
+			SPA_PARAM_Meta, 1, 1, NULL) == 0 && params->param == NULL);
 	params->param = NULL;
 	spa_assert_se(spa_node_port_enum_params(node, 0, SPA_DIRECTION_OUTPUT, 0,
 			SPA_PARAM_Meta, 2, 1, NULL) == 0);
@@ -647,7 +642,7 @@ static int capture(const struct spa_handle_factory *factory,
 			buffers, REQUESTED_BUFFERS) == -EINVAL);
 	storage[1].data.maxsize = (uint32_t)payload_size;
 	uint32_t meta_count = storage[1].buffer.n_metas;
-	storage[1].buffer.n_metas = 1;
+	storage[1].buffer.n_metas = 0;
 	spa_assert_se(spa_node_port_use_buffers(node, SPA_DIRECTION_OUTPUT, 0, 0,
 			buffers, REQUESTED_BUFFERS) == -EINVAL);
 	storage[1].buffer.n_metas = meta_count;
@@ -730,8 +725,6 @@ static int capture(const struct spa_handle_factory *factory,
 			spa_assert_se(storage[id].header.pts > last_pts);
 		if (storage[id].header.pts != SPA_TIME_INVALID)
 			last_pts = storage[id].header.pts;
-		spa_assert_se(spa_meta_acquisition_is_valid(
-				&storage[id].metas[1]));
 		io.status = SPA_STATUS_NEED_DATA;
 		frames++;
 	}

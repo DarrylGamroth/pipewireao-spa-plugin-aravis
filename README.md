@@ -39,7 +39,7 @@ core development files through its build arguments or BuildKit secrets.
 
 ## CI and coverage
 
-GitHub Actions builds and tests against PipeWireAO 1.7.3 on Debian 13.
+GitHub Actions builds and tests against PipeWireAO 4.0.5 on Debian 13.
 The SPA factory, camera API, and frame capture with a simulated GigE Vision
 camera on loopback. Physical camera and other transport paths require separate
 validation.

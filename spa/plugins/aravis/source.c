@@ -826,23 +826,6 @@ static int build_port_param(struct impl *this, uint32_t id, uint32_t index,
 					SPA_POD_Int(sizeof(struct
 							spa_meta_header)));
 			return 1;
-		case 1: {
-			struct spa_pod_frame object;
-			spa_pod_builder_push_object(builder, &object,
-					SPA_TYPE_OBJECT_ParamMeta, id);
-			spa_pod_builder_add(builder, SPA_PARAM_META_type,
-					SPA_POD_Id(SPA_META_Acquisition),
-					SPA_PARAM_META_size,
-					SPA_POD_Int(sizeof(struct
-							spa_meta_acquisition)),
-					0);
-			spa_pod_builder_prop(builder, SPA_PARAM_META_features,
-					SPA_POD_PROP_FLAG_MANDATORY);
-			spa_pod_builder_int(builder,
-					SPA_META_FEATURE_ACQUISITION_CURRENT);
-			*param = spa_pod_builder_pop(builder, &object);
-			return 1;
-		}
 		default:
 			return 0;
 		}
@@ -1031,11 +1014,7 @@ static int impl_node_port_use_buffers(void *object,
 				data->maxsize < required || data->chunk == NULL)
 			return -EINVAL;
 		if (spa_buffer_find_meta_data(buffers[i], SPA_META_Header,
-				    sizeof(struct spa_meta_header)) == NULL ||
-				spa_buffer_find_meta_data(buffers[i],
-						SPA_META_Acquisition,
-						sizeof(struct spa_meta_acquisition)) ==
-						NULL)
+				    sizeof(struct spa_meta_header)) == NULL)
 			return -EINVAL;
 	}
 	for (i = 0; i < n_buffers; i++) {
@@ -1248,7 +1227,7 @@ static int publish_row_block(struct impl *this)
 {
 	struct buffer_slot *slot = this->row_slot;
 	struct row_output *output;
-	struct spa_meta_acquisition acquisition;
+
 	struct pwao_image_frame frame;
 	struct spa_data *data;
 	uint64_t pitch, bytes, available_rows, end_row;
@@ -1298,7 +1277,6 @@ static int publish_row_block(struct impl *this)
 	if (slot->next_row == 0 &&
 			(this->discontinuity || slot->row_discontinuity))
 		header_flags |= SPA_META_HEADER_FLAG_DISCONT;
-	spa_meta_acquisition_init(&acquisition);
 	frame = (struct pwao_image_frame){
 		.data_index = 0,
 		.header_flags = header_flags,
@@ -1310,11 +1288,9 @@ static int publish_row_block(struct impl *this)
 		.sequence = slot->frame_id,
 		.pts = slot->row_terminal_ready ? slot->terminal_pts
 						: SPA_TIME_INVALID,
-		.acquisition = &acquisition,
 	};
 	res = pwao_image_frame_write(output->buffer, &frame,
-			PWAO_IMAGE_FRAME_REQUIRE_HEADER |
-					PWAO_IMAGE_FRAME_REQUIRE_ACQUISITION);
+			PWAO_IMAGE_FRAME_REQUIRE_HEADER);
 	if (res < 0)
 		return res;
 	this->port.io->buffer_id = output->id;
@@ -1332,7 +1308,7 @@ static int publish_buffer(struct impl *this,
 		const struct aravis_camera_completion *completion)
 {
 	const struct aravis_frame_info *info = &completion->frame;
-	struct spa_meta_acquisition acquisition;
+
 	struct pwao_image_frame frame;
 	struct buffer_slot *slot;
 	struct spa_buffer *buffer;
@@ -1381,7 +1357,6 @@ static int publish_buffer(struct impl *this,
 	}
 	if (info->incomplete || size != expected)
 		chunk_flags |= SPA_CHUNK_FLAG_CORRUPTED;
-	spa_meta_acquisition_init(&acquisition);
 	frame = (struct pwao_image_frame){
 		.data_index = 0,
 		.header_flags = header_flags,
@@ -1391,14 +1366,12 @@ static int publish_buffer(struct impl *this,
 		.stride = (int32_t)stride,
 		.sequence = info->frame_id,
 		.pts = monotonic_nsec(),
-		.acquisition = &acquisition,
 	};
 	if (this->port.io == NULL ||
 			this->port.io->status == SPA_STATUS_HAVE_DATA) {
 		res = -EBUSY;
 	} else if ((res = pwao_image_frame_write(buffer, &frame,
-				    PWAO_IMAGE_FRAME_REQUIRE_HEADER |
-						    PWAO_IMAGE_FRAME_REQUIRE_ACQUISITION)) >=
+				    PWAO_IMAGE_FRAME_REQUIRE_HEADER)) >=
 			0) {
 		this->port.io->buffer_id = slot->id;
 		this->port.io->status = SPA_STATUS_HAVE_DATA;

@@ -12,7 +12,7 @@ aravis_lib = shared_library(
 if get_option('tests').allowed()
   aravis_factory_test = executable(
     'spa-aravis-factory-test',
-    'test-factory.c',
+    '../../../tests/aravis/test-factory.c',
     dependencies: [spa_dep, dl_dep],
     c_args: ['-Wno-pedantic'],
   )
@@ -24,14 +24,14 @@ if get_option('tests').allowed()
 
   capture_test = executable(
     'spa-aravis-capture-test',
-    'test-capture.c',
+    '../../../tests/aravis/test-capture.c',
     dependencies: [spa_dep, dl_dep],
     c_args: ['-Wno-pedantic'],
   )
 
   camera_test = executable(
     'spa-aravis-camera-test',
-    ['test-camera.c', 'camera.c'],
+    ['../../../tests/aravis/test-camera.c', 'camera.c'],
     dependencies: [spa_dep, aravis_dep],
   )
 
@@ -53,7 +53,7 @@ if get_option('tests').allowed()
     endforeach
     aravis_faults = shared_library(
       'spa-aravis-faults',
-      ['plugin.c', 'source.c', 'camera.c', 'params.c', 'test-faults.c'],
+      ['plugin.c', 'source.c', 'camera.c', 'params.c', '../../../tests/aravis/test-faults.c'],
       dependencies: [spa_dep, aravis_dep],
       include_directories: plugin_include,
       c_args: ['-Wno-pedantic'],
@@ -62,7 +62,7 @@ if get_option('tests').allowed()
     test(
       'spa-aravis-gige-loopback',
       python,
-      args: [files('test-gige-loopback.py'), fake_camera.full_path(), arv_tool.full_path(),
+      args: [files('../../../tests/aravis/test-gige-loopback.py'), fake_camera.full_path(), arv_tool.full_path(),
         camera_test.full_path(), capture_test.full_path(), aravis_lib.full_path(),
         aravis_faults.full_path()],
       depends: [camera_test, capture_test, aravis_lib, aravis_faults],
